@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +47,7 @@ fun AskPermissionsScreen(
     val context = LocalContext.current
 
     val permissions = remember {
-        mutableListOf<Boolean>(
+        mutableStateListOf<Boolean>(
             context.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
             context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
         )
@@ -93,6 +94,7 @@ fun AskPermissionsScreen(
         actions.add(askPostNotification)
         permissions.add(context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
     }
+
     Scaffold(
         bottomBar = {
             Button(

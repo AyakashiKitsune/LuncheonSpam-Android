@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +35,6 @@ class LuncheonSpamApp : Application() {
 
 class MainActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -58,6 +56,9 @@ class MainActivity : ComponentActivity() {
 
                         composable(Screenpaths.AskPermissionsScreen.destination) {
                             val permissions = remember {
+                                /*
+                                * when the device is android 13 and above for post notifications
+                                * */
                                 if (Build.VERSION_CODES.TIRAMISU <= Build.VERSION.SDK_INT) {
                                     listOf<Boolean>(
                                         applicationContext.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
@@ -65,12 +66,18 @@ class MainActivity : ComponentActivity() {
                                         applicationContext.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
                                     )
                                 } else {
+                                    /*
+                                    * when the device is lower than android 13
+                                    * */
                                     listOf<Boolean>(
                                         applicationContext.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
                                         applicationContext.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
                                     )
                                 }
                             }
+                            /*
+                            * if every permissions has true then navigate to main screen
+                            * */
                             if (permissions.reduce { acc, b -> acc and b }) {
                                 navHostController.navigate(Screenpaths.ProbablySpamMessageScreen.destination) {
                                     this.popUpTo(Screenpaths.AskPermissionsScreen.destination) {
@@ -78,6 +85,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            /* else just show the ask perissions screen*/
                             AskPermissionsScreen(navHostController = navHostController)
                         }
 

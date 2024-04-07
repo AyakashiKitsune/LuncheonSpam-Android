@@ -9,12 +9,20 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.ayakashi_kitsune.luncheonspam.data.SMSMessage
 import com.ayakashi_kitsune.luncheonspam.data.SMSMessageEvent
+import com.ayakashi_kitsune.luncheonspam.data.SpamHamPhishRequest
 import com.ayakashi_kitsune.luncheonspam.domain.broadcastSMSReceiver.BroadcastSMSReceiver
 import com.ayakashi_kitsune.luncheonspam.domain.contentSMSProvider.ContentSMSReceiver
+import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
+import com.ayakashi_kitsune.luncheonspam.domain.serverService.ServerClientService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LuncheonViewmodelFactory(
     private val context: Context,
@@ -32,6 +40,9 @@ class LuncheonViewmodel(private val context: Context) : ViewModel() {
     private val contentReceiver: ContentSMSReceiver
     private val messagesList: SnapshotStateList<SMSMessage> = mutableStateListOf()
     private val broadcastSMSReceiver: BroadcastSMSReceiver
+    private val serverClientService: ServerClientService
+    private val notificationService: NotificationService
+
     val messageslist = flow {
         while (true) {
             val groupsms = messagesList.groupBy { it.sender }
@@ -43,6 +54,8 @@ class LuncheonViewmodel(private val context: Context) : ViewModel() {
 
     init {
         contentReceiver = ContentSMSReceiver(context)
+        notificationService = NotificationService(context)
+        serverClientService = ServerClientService()
         broadcastSMSReceiver = object : BroadcastSMSReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
@@ -50,6 +63,12 @@ class LuncheonViewmodel(private val context: Context) : ViewModel() {
                     setMessages(SMSMessageEvent.addSMS(sms))
                     Toast.makeText(context, sms.toString(), Toast.LENGTH_SHORT).show()
                     println("ran viewmodel broadcaster")
+
+                    viewModelScope.launch {
+                        withContext(Dispatchers.IO + SupervisorJob()) {
+                            predict(arrayListOf(sms.content))
+                        }
+                    }
                 }
                 super.onReceive(context, intent)
             }
@@ -68,6 +87,18 @@ class LuncheonViewmodel(private val context: Context) : ViewModel() {
                 }
             }
             is SMSMessageEvent.addSMS -> messagesList.add(event.smsMessage)
+        }
+    }
+
+    fun predict(messages: List<String>) {
+        viewModelScope.launch {
+            try {
+                val spamHamPhishRequest = SpamHamPhishRequest(messages)
+                val result = serverClientService.getpredictions(spamHamPhishRequest)
+                println(result.toString())
+            } catch (e: Exception) {
+                println(e.message)
+            }
         }
     }
 

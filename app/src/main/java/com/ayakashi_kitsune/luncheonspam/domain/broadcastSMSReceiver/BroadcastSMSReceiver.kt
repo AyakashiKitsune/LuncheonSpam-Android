@@ -8,7 +8,7 @@ import android.provider.Telephony
 import android.widget.Toast
 import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BackgroundService
 
-class BroadcastSMSReceiver : BroadcastReceiver() {
+open class BroadcastSMSReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {

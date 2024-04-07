@@ -1,10 +1,10 @@
 package com.ayakashi_kitsune.luncheonspam.data
 
 data class SMSMessage(
-    val id: Int,
-    val sender: String,
-    val content: String,
-    val date: Long,
+    val id: Int = 0,
+    val sender: String = "",
+    val content: String = "",
+    val date: Long = 0,
 )
 
 sealed class SMSMessageEvent {

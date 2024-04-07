@@ -11,6 +11,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -27,7 +29,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -38,8 +42,10 @@ import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BackgroundServ
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import com.ayakashi_kitsune.luncheonspam.presentation.AskPermissionsScreen
 import com.ayakashi_kitsune.luncheonspam.presentation.ChatView
+import com.ayakashi_kitsune.luncheonspam.presentation.DebugScreen
 import com.ayakashi_kitsune.luncheonspam.presentation.ProbablySpamMessageScreen
 import com.ayakashi_kitsune.luncheonspam.presentation.Screenpaths
+import com.ayakashi_kitsune.luncheonspam.presentation.SettingsScreen
 import com.ayakashi_kitsune.luncheonspam.presentation.navScreenList
 import com.ayakashi_kitsune.luncheonspam.ui.theme.LuncheonSpamTheme
 
@@ -136,7 +142,11 @@ class MainActivity : ComponentActivity() {
 
 
                             composable(Screenpaths.SettingsScreen.destination) {
+                                SettingsScreen(viewmodel = viewmodel)
+                            }
 
+                            composable(Screenpaths.DebugScreen.destination) {
+                                DebugScreen(viewmodel = viewmodel)
                             }
                         }
                     }
@@ -146,6 +156,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LuncheonNavigationBar(
     navHostController: NavHostController
@@ -160,6 +171,7 @@ fun LuncheonNavigationBar(
         Configuration.ORIENTATION_LANDSCAPE -> true
         else -> false
     }
+    val haptics = LocalHapticFeedback.current
     if (selected in navScreenList.map { it.destination }) {
         if (isLandscapeOrientation) {
             NavigationRail {
@@ -184,7 +196,15 @@ fun LuncheonNavigationBar(
                 }
             }
         } else {
-            NavigationBar {
+            NavigationBar(
+                modifier = Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        navHostController.navigate(Screenpaths.DebugScreen.destination)
+                    }
+                )
+            ) {
                 navScreenList.map { screen ->
                     NavigationBarItem(
                         selected = screen.destination == selected,
@@ -201,7 +221,8 @@ fun LuncheonNavigationBar(
                                 imageVector = screen.icon,
                                 contentDescription = screen.destination + " screen"
                             )
-                        }
+                        },
+
                     )
                 }
             }

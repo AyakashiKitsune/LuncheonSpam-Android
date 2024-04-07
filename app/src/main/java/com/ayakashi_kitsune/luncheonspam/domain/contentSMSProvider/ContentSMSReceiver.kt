@@ -49,24 +49,25 @@ class ContentSMSReceiver(
         return rows
     }
 
-    fun getLatestSMS() {
+    fun getLatestSMS(): SMSMessage {
         val cursor = context.contentResolver.query(
-            Telephony.Sms.CONTENT_URI,
+            Telephony.Sms.Inbox.CONTENT_URI,
             projection,
             null,
             null,
-            "ORDER BY ${Telephony.Sms._ID} DESC LIMIT 1"
+            "${Telephony.Sms._ID} DESC"
         )
         if (cursor != null) {
-            while (cursor.moveToNext()) {
-                val smsMessage = SMSMessage(
-                    cursor.getInt(cursor.getColumnIndex(projection[0])),
-                    cursor.getString(cursor.getColumnIndex(projection[1])),
-                    cursor.getString(cursor.getColumnIndex(projection[2])),
-                    cursor.getLong(cursor.getColumnIndex(projection[3])),
-                )
-                println(smsMessage)
-            }
+            cursor.moveToNext()
+            val smsMessage = SMSMessage(
+                cursor.getInt(cursor.getColumnIndex(projection[0])),
+                cursor.getString(cursor.getColumnIndex(projection[1])),
+                cursor.getString(cursor.getColumnIndex(projection[2])),
+                cursor.getLong(cursor.getColumnIndex(projection[3])),
+            )
+            println(smsMessage)
+            return smsMessage
         }
+        return SMSMessage()
     }
 }

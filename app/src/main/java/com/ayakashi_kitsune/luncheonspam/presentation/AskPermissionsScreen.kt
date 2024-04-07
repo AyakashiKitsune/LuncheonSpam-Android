@@ -1,4 +1,4 @@
-package com.ayakashi_kitsune.luncheonspam.features.AskPermission.ui
+package com.ayakashi_kitsune.luncheonspam.presentation
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -37,7 +37,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.ayakashi_kitsune.luncheonspam.backbone.Screenpaths
 import com.ayakashi_kitsune.luncheonspam.ui.theme.LuncheonSpamTheme
 
 @Composable

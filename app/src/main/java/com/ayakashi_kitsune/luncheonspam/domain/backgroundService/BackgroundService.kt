@@ -1,4 +1,4 @@
-package com.ayakashi_kitsune.luncheonspam.features.backgroundService
+package com.ayakashi_kitsune.luncheonspam.domain.backgroundService
 
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -9,9 +9,10 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import com.ayakashi_kitsune.luncheonspam.features.NotificationService.NotificationService
+import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -19,10 +20,23 @@ class BackgroundService : Service() {
     lateinit var cScope: CoroutineScope
     lateinit var intentFilter: IntentFilter
     lateinit var broadcastReceiver: BroadcastReceiver
+    lateinit var notificationService: NotificationService
+    var totalSecs: Long = 0L
     fun runScope() {
         cScope.launch {
-            for (i in 0..20) {
-                Log.d("BackgroundService", "running")
+            while (true) {
+                val hours = totalSecs / 3600;
+                val minutes = (totalSecs % 3600) / 60;
+                val seconds = totalSecs % 60;
+
+                val timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                notificationService.createNotification(
+                    NotificationService.SERVICE_STATUS_ID,
+                    "Luncheon Spam is Running",
+                    timeString,
+                    showOnce = true
+                )
+                totalSecs++
                 delay(1000)
             }
         }
@@ -30,11 +44,15 @@ class BackgroundService : Service() {
 
     override fun onCreate() {
         Log.d("BackgroundService", "created")
-
+        notificationService = NotificationService(applicationContext)
         cScope = CoroutineScope(SupervisorJob())
         broadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                NotificationService(context!!).createNotification("from service", "service works")
+                NotificationService(context!!).createNotification(
+                    1,
+                    "from service",
+                    "service works"
+                )
             }
         }
         intentFilter = IntentFilter().apply {
@@ -62,6 +80,8 @@ class BackgroundService : Service() {
     override fun onDestroy() {
         Log.d("BackgroundService", "destroyed")
         unregisterReceiver(broadcastReceiver)
+        cScope.cancel()
+        notificationService.cancelNotification(NotificationService.SERVICE_STATUS_ID)
         super.onDestroy()
     }
 

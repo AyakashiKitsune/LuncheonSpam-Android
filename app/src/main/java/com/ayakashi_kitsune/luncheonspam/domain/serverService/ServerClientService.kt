@@ -1,4 +1,4 @@
-package com.ayakashi_kitsune.luncheonspam.features.serverService.core
+package com.ayakashi_kitsune.luncheonspam.domain.serverService
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android

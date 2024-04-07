@@ -1,4 +1,4 @@
-package com.ayakashi_kitsune.luncheonspam.features.NotificationService
+package com.ayakashi_kitsune.luncheonspam.domain.notificationService
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -18,6 +18,10 @@ class NotificationService(
     private val context: Context,
 ) {
     private val CHANNEL_ID = "Luncheon service"
+
+    companion object {
+        val SERVICE_STATUS_ID = 0
+    }
 
     /**
      * Create channel
@@ -41,18 +45,28 @@ class NotificationService(
      */
     @SuppressLint("MissingPermission")
     fun createNotification(
-        Notification_title: String, Notification_Content: String
+        id: Int,
+        Notification_title: String,
+        Notification_Content: String,
+        showOnce: Boolean = false
     ) {
 
-        val builder =
-            NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(Notification_title)
-                .setContentText(Notification_Content)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .build()
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(Notification_title)
+            .setContentText(Notification_Content)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOnlyAlertOnce(showOnce)
+            .build()
+
         NotificationManagerCompat.from(context).run {
-            this.notify(0, builder)
+            this.notify(id, builder)
+        }
+    }
+
+    fun cancelNotification(id: Int) {
+        NotificationManagerCompat.from(context).run {
+            this.cancel(id)
         }
     }
 }

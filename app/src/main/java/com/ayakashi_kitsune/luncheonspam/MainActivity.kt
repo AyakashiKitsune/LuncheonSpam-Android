@@ -4,10 +4,12 @@ import android.Manifest
 import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -15,28 +17,30 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.ayakashi_kitsune.luncheonspam.backbone.LuncheonViewmodel
-import com.ayakashi_kitsune.luncheonspam.backbone.Screenpaths
-import com.ayakashi_kitsune.luncheonspam.backbone.navScreenList
-import com.ayakashi_kitsune.luncheonspam.features.AskPermission.ui.AskPermissionsScreen
-import com.ayakashi_kitsune.luncheonspam.features.NotificationService.NotificationService
-import com.ayakashi_kitsune.luncheonspam.features.ProbablySpamMessage.ui.ProbablySpamMessageUI
-import com.ayakashi_kitsune.luncheonspam.features.backgroundService.BackgroundService
-import com.ayakashi_kitsune.luncheonspam.features.chatsview.ui.ChatView
+import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BackgroundService
+import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
+import com.ayakashi_kitsune.luncheonspam.presentation.AskPermissionsScreen
+import com.ayakashi_kitsune.luncheonspam.presentation.ChatView
+import com.ayakashi_kitsune.luncheonspam.presentation.ProbablySpamMessageScreen
+import com.ayakashi_kitsune.luncheonspam.presentation.Screenpaths
+import com.ayakashi_kitsune.luncheonspam.presentation.navScreenList
 import com.ayakashi_kitsune.luncheonspam.ui.theme.LuncheonSpamTheme
 
 class LuncheonSpamApp : Application() {
@@ -54,7 +58,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             LuncheonSpamTheme {
-                val viewmodel = viewModel<LuncheonViewmodel>()
+                val viewmodel: LuncheonViewmodel by viewModels {
+                    LuncheonViewmodelFactory(context = this)
+                }
                 val navHostController = rememberNavController()
 
                 Scaffold(
@@ -108,9 +114,10 @@ class MainActivity : ComponentActivity() {
                                 AskPermissionsScreen(navHostController = navHostController)
                             }
 
-                            composable(Screenpaths.ProbablySpamMessageScreen.destination,
+                            composable(
+                                Screenpaths.ProbablySpamMessageScreen.destination,
                                 enterTransition = { slideInHorizontally() }) {
-                                ProbablySpamMessageUI(
+                                ProbablySpamMessageScreen(
                                     viewmodel = viewmodel,
                                     navHostController
                                 )
@@ -143,27 +150,60 @@ class MainActivity : ComponentActivity() {
 fun LuncheonNavigationBar(
     navHostController: NavHostController
 ) {
-    val selected by remember {
-        derivedStateOf {
+    var selected by remember {
+        mutableStateOf(
             navHostController.currentDestination?.route
                 ?: Screenpaths.ProbablySpamMessageScreen.destination
-        }
+        )
     }
-    if (navScreenList.map { it.destination }.contains(selected)) {
-        NavigationBar {
-            navScreenList.map { screen ->
-                NavigationBarItem(
-                    selected = screen.destination == selected,
-                    onClick = {
-                        navHostController.navigate(screen.destination)
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = screen.icon,
-                            contentDescription = screen.destination + " screen"
-                        )
-                    }
-                )
+    val isLandscapeOrientation = when (LocalConfiguration.current.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> true
+        else -> false
+    }
+    if (selected in navScreenList.map { it.destination }) {
+        if (isLandscapeOrientation) {
+            NavigationRail {
+                navScreenList.map { screen ->
+                    NavigationRailItem(
+                        selected = screen.destination == selected,
+                        onClick = {
+                            navHostController.navigate(screen.destination) {
+                                this.popUpTo(selected) {
+                                    inclusive = true
+                                }
+                            }
+                            selected = screen.destination
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = screen.icon,
+                                contentDescription = screen.destination + " screen"
+                            )
+                        }
+                    )
+                }
+            }
+        } else {
+            NavigationBar {
+                navScreenList.map { screen ->
+                    NavigationBarItem(
+                        selected = screen.destination == selected,
+                        onClick = {
+                            navHostController.navigate(screen.destination) {
+                                this.popUpTo(selected) {
+                                    inclusive = true
+                                }
+                            }
+                            selected = screen.destination
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = screen.icon,
+                                contentDescription = screen.destination + " screen"
+                            )
+                        }
+                    )
+                }
             }
         }
     }

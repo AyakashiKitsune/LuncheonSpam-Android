@@ -13,3 +13,12 @@ fun Long.getDateTimeFromMilis(): String {
     val minute = calendar.get(Calendar.MINUTE)
     return "$mMonth-$mDay-$mYear  $hour:$minute"
 }
+
+fun Long.getTimeFromMilis(): String {
+    val calendar: Calendar = Calendar.getInstance()
+    calendar.setTimeInMillis(this)
+
+    val hour = calendar.get(Calendar.HOUR)
+    val minute = calendar.get(Calendar.MINUTE)
+    return "$hour:$minute"
+}

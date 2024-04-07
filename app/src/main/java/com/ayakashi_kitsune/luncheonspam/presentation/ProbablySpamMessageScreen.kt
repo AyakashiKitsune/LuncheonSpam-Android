@@ -1,4 +1,4 @@
-package com.ayakashi_kitsune.luncheonspam.features.ProbablySpamMessage.ui
+package com.ayakashi_kitsune.luncheonspam.presentation
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
@@ -15,40 +15,23 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.ayakashi_kitsune.luncheonspam.backbone.LuncheonViewmodel
-import com.ayakashi_kitsune.luncheonspam.backbone.Screenpaths
+import com.ayakashi_kitsune.luncheonspam.LuncheonViewmodel
 import com.ayakashi_kitsune.luncheonspam.data.SMSMessage
-import com.ayakashi_kitsune.luncheonspam.data.SMSMessageEvent
-import com.ayakashi_kitsune.luncheonspam.features.contentProvider.core.ContentReceiver
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProbablySpamMessageUI(
+fun ProbablySpamMessageScreen(
     viewmodel: LuncheonViewmodel,
     navHostController: NavHostController,
     modifier: Modifier = Modifier.fillMaxSize()
 ) {
-    val context = LocalContext.current
-    val contentReceiver = remember {
-        ContentReceiver(context)
-    }
     val listOfSMS: Map<String, List<SMSMessage>> by viewmodel.messageslist.collectAsState(initial = emptyMap())
-    LaunchedEffect(key1 = true) {
-        withContext(Dispatchers.IO) {
-            viewmodel.Setmessages(SMSMessageEvent.addAllSMS(contentReceiver.displaySmsLog()))
-        }
-    }
     if (listOfSMS.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),

@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.ayakashi_kitsune.luncheonspam.features.chatsview.ui
+package com.ayakashi_kitsune.luncheonspam.presentation
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
@@ -33,7 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.ayakashi_kitsune.luncheonspam.backbone.LuncheonViewmodel
+import com.ayakashi_kitsune.luncheonspam.LuncheonViewmodel
 import com.ayakashi_kitsune.luncheonspam.data.SMSMessage
 import com.ayakashi_kitsune.luncheonspam.utils.getDateTimeFromMilis
 

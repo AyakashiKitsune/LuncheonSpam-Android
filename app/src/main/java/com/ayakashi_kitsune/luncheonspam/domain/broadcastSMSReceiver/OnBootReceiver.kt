@@ -4,19 +4,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import android.provider.Telephony
 import android.widget.Toast
 import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BackgroundService
 
-open class BroadcastSMSReceiver : BroadcastReceiver() {
+open class OnBootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
-            Telephony.Sms.Intents.SMS_RECEIVED_ACTION -> {
-                Toast.makeText(context, "sms received", Toast.LENGTH_SHORT).show()
-            }
-
             Intent.ACTION_BOOT_COMPLETED -> {
+                Toast.makeText(context, "running app", Toast.LENGTH_SHORT).show()
                 context?.startService(Intent(context, BackgroundService::class.java))
             }
         }

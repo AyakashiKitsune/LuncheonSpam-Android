@@ -38,7 +38,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.room.Room
 import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BackgroundService
+import com.ayakashi_kitsune.luncheonspam.domain.database.AppDatabase
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import com.ayakashi_kitsune.luncheonspam.presentation.AskPermissionsScreen
 import com.ayakashi_kitsune.luncheonspam.presentation.ChatView
@@ -54,23 +56,47 @@ class LuncheonSpamApp : Application() {
         super.onCreate()
         val notificationService = NotificationService(this)
         notificationService.createChannel()
+
+        startService(Intent(this, BackgroundService::class.java))
     }
 }
 
 class MainActivity : ComponentActivity() {
+    private val host: String = "http://192.168.1.12"
+    private val port: String = "5000"
+    private lateinit var database: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        startService(Intent(this, BackgroundService::class.java))
         super.onCreate(savedInstanceState)
+        database = Room.databaseBuilder(
+            context = this.applicationContext,
+            klass = AppDatabase::class.java,
+            name = "LuncheonSpamDatabase"
+        ).build()
+        val viewmodel: LuncheonViewmodel by viewModels {
+            LuncheonViewmodelFactory(
+                context = this.applicationContext,
+                database = database,
+                host, port
+            )
+        }
         setContent {
             LuncheonSpamTheme {
-                val viewmodel: LuncheonViewmodel by viewModels {
-                    LuncheonViewmodelFactory(context = this)
-                }
                 val navHostController = rememberNavController()
-
+                var selectedNavIndex by remember {
+                    mutableStateOf(
+                        navHostController.currentBackStackEntry?.destination?.route
+                            ?: Screenpaths.ProbablySpamMessageScreen.destination
+                    )
+                }
                 Scaffold(
-                    bottomBar = { LuncheonNavigationBar(navHostController = navHostController) }
+                    bottomBar = {
+                        LuncheonNavigationBar(
+                            navHostController = navHostController,
+                            getSelectedNavIndex = selectedNavIndex,
+                            setSelectedNavIndex = { selectedNavIndex = it }
+                        )
+                    }
                 ) { padd ->
                     /*surface for all text to contrast automatically*/
                     Surface(
@@ -122,10 +148,14 @@ class MainActivity : ComponentActivity() {
 
                             composable(
                                 Screenpaths.ProbablySpamMessageScreen.destination,
-                                enterTransition = { slideInHorizontally() }) {
+                                enterTransition = { slideInHorizontally() }
+                            ) {
                                 ProbablySpamMessageScreen(
                                     viewmodel = viewmodel,
-                                    navHostController
+                                    navHostController,
+                                    onClickChat = {
+                                        navHostController.navigate(Screenpaths.ChatViewScreen.add(it))
+                                    }
                                 )
                             }
 
@@ -138,8 +168,6 @@ class MainActivity : ComponentActivity() {
                                 val index = it.arguments?.getString("index")
                                 ChatView(viewmodel, index)
                             }
-
-
 
                             composable(Screenpaths.SettingsScreen.destination) {
                                 SettingsScreen(viewmodel = viewmodel)
@@ -159,32 +187,34 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LuncheonNavigationBar(
-    navHostController: NavHostController
+    navHostController: NavHostController,
+    getSelectedNavIndex: String,
+    setSelectedNavIndex: (String) -> Unit
 ) {
-    var selected by remember {
-        mutableStateOf(
-            navHostController.currentDestination?.route
-                ?: Screenpaths.ProbablySpamMessageScreen.destination
-        )
-    }
     val isLandscapeOrientation = when (LocalConfiguration.current.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> true
         else -> false
     }
     val haptics = LocalHapticFeedback.current
-    if (selected in navScreenList.map { it.destination }) {
+    val shownav = when (getSelectedNavIndex) {
+        Screenpaths.ProbablySpamMessageScreen.destination,
+        Screenpaths.SettingsScreen.destination -> true
+
+        else -> false
+    }
+    if (shownav) {
         if (isLandscapeOrientation) {
             NavigationRail {
                 navScreenList.map { screen ->
                     NavigationRailItem(
-                        selected = screen.destination == selected,
+                        selected = screen.destination == getSelectedNavIndex,
                         onClick = {
                             navHostController.navigate(screen.destination) {
-                                this.popUpTo(selected) {
+                                this.popUpTo(getSelectedNavIndex) {
                                     inclusive = true
                                 }
                             }
-                            selected = screen.destination
+                            setSelectedNavIndex(screen.destination)
                         },
                         icon = {
                             Icon(
@@ -207,14 +237,14 @@ fun LuncheonNavigationBar(
             ) {
                 navScreenList.map { screen ->
                     NavigationBarItem(
-                        selected = screen.destination == selected,
+                        selected = screen.destination == getSelectedNavIndex,
                         onClick = {
                             navHostController.navigate(screen.destination) {
-                                this.popUpTo(selected) {
+                                this.popUpTo(getSelectedNavIndex) {
                                     inclusive = true
                                 }
                             }
-                            selected = screen.destination
+                            setSelectedNavIndex(screen.destination)
                         },
                         icon = {
                             Icon(
@@ -223,7 +253,7 @@ fun LuncheonNavigationBar(
                             )
                         },
 
-                    )
+                        )
                 }
             }
         }

@@ -23,15 +23,20 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.ayakashi_kitsune.luncheonspam.LuncheonViewmodel
 import com.ayakashi_kitsune.luncheonspam.data.SMSMessage
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProbablySpamMessageScreen(
     viewmodel: LuncheonViewmodel,
     navHostController: NavHostController,
+    onClickChat: (String) -> Unit,
     modifier: Modifier = Modifier.fillMaxSize()
 ) {
-    val listOfSMS: Map<String, List<SMSMessage>> by viewmodel.messageslist.collectAsState(initial = emptyMap())
+    val listOfSMS: Map<String, List<SMSMessage>> by viewmodel.messageslist.collectAsState(
+        initial = emptyMap(),
+        Dispatchers.IO
+    )
     if (listOfSMS.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -57,7 +62,8 @@ fun ProbablySpamMessageScreen(
                 MessageCard(
                     smsMessage = listOfSMS[listOfSMS.keys.toList()[it]]!!,
                     showChat = {
-                        navHostController.navigate(Screenpaths.ChatViewScreen.add(listOfSMS.keys.toList()[it]))
+                        val index = listOfSMS.keys.toList()[it]
+                        onClickChat(index)
                     },
                     Modifier
                         .fillMaxWidth()

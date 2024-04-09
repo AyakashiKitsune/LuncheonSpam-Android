@@ -4,4 +4,6 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid) apply false
     alias(libs.plugins.ktorplugin) apply false
     alias(libs.plugins.ktorpluginserialization) apply false
+    alias(libs.plugins.devtoolsksp) apply false
+
 }

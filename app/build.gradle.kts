@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.ktorpluginserialization)
+    alias(libs.plugins.devtoolsksp)
 }
 
 android {
@@ -73,12 +74,14 @@ dependencies {
     // extendted icons
     implementation(libs.androidx.material.icons.extended.android)
     // ktor
-    implementation(
-        libs.ktor.client.android
-    )
+    implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.serialization)
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
+    /*room database*/
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 }

@@ -30,10 +30,10 @@ class ContentSMSReceiver(
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 val smsMessage = SMSMessage(
-                    cursor.getInt(cursor.getColumnIndex(projection[0])),
-                    cursor.getString(cursor.getColumnIndex(projection[1])),
-                    cursor.getString(cursor.getColumnIndex(projection[2])),
-                    cursor.getLong(cursor.getColumnIndex(projection[3])),
+                    id = cursor.getInt(cursor.getColumnIndex(projection[0])),
+                    sender = cursor.getString(cursor.getColumnIndex(projection[1])),
+                    content = cursor.getString(cursor.getColumnIndex(projection[2])),
+                    date = cursor.getLong(cursor.getColumnIndex(projection[3])),
                 )
 //                for (i in 0 until cursor.columnCount) {
 //                    Log.d(cursor.getColumnName(i) + "", cursor.getString(i) + "")

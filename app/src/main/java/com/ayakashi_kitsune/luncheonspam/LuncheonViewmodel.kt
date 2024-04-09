@@ -1,109 +1,80 @@
 package com.ayakashi_kitsune.luncheonspam
 
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.provider.Telephony
-import android.widget.Toast
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.ayakashi_kitsune.luncheonspam.data.SMSMessage
-import com.ayakashi_kitsune.luncheonspam.data.SMSMessageEvent
-import com.ayakashi_kitsune.luncheonspam.data.SpamHamPhishRequest
-import com.ayakashi_kitsune.luncheonspam.domain.broadcastSMSReceiver.BroadcastSMSReceiver
 import com.ayakashi_kitsune.luncheonspam.domain.contentSMSProvider.ContentSMSReceiver
+import com.ayakashi_kitsune.luncheonspam.domain.database.AppDatabase
+import com.ayakashi_kitsune.luncheonspam.domain.database.DAOSMSMessage
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import com.ayakashi_kitsune.luncheonspam.domain.serverService.ServerClientService
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class LuncheonViewmodelFactory(
     private val context: Context,
+    private val database: AppDatabase,
+    private val host: String,
+    private val port: String
 ) : ViewModelProvider.Factory {
-
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LuncheonViewmodel(context) as T
+        return LuncheonViewmodel(context, database, host, port) as T
     }
 }
 
 
-class LuncheonViewmodel(private val context: Context) : ViewModel() {
-
+class LuncheonViewmodel(
+    context: Context,
+    database: AppDatabase,
+    host: String,
+    port: String,
+) : ViewModel() {
     private val contentReceiver: ContentSMSReceiver
-    private val messagesList: SnapshotStateList<SMSMessage> = mutableStateListOf()
-    private val broadcastSMSReceiver: BroadcastSMSReceiver
+
+    //    private val broadcastSMSReceiver: BroadcastReceiver
     private val serverClientService: ServerClientService
     private val notificationService: NotificationService
 
+    private val smsDAOSMSMessage: DAOSMSMessage = database.DAOSMSMessage()
+
     val messageslist = flow {
         while (true) {
-            val groupsms = messagesList.groupBy { it.sender }
-            emit(groupsms)
-            println("reading")
+            emit(smsDAOSMSMessage.getSMSMessages())
             delay(3000)
         }
+
     }
+        .catch {
+            Log.d("messageListErr", it.message.toString())
+        }
+        .onEach {
+            println("running sms flow")
+        }
+        .map { listsms ->
+            listsms.groupBy {
+                it.sender
+            }
+        }.flowOn(Dispatchers.IO)
 
     init {
         contentReceiver = ContentSMSReceiver(context)
         notificationService = NotificationService(context)
         serverClientService = ServerClientService()
-        broadcastSMSReceiver = object : BroadcastSMSReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
-                    val sms = contentReceiver.getLatestSMS()
-                    setMessages(SMSMessageEvent.addSMS(sms))
-                    Toast.makeText(context, sms.toString(), Toast.LENGTH_SHORT).show()
-                    println("ran viewmodel broadcaster")
 
-                    viewModelScope.launch {
-                        withContext(Dispatchers.IO + SupervisorJob()) {
-                            predict(arrayListOf(sms.content))
-                        }
-                    }
-                }
-                super.onReceive(context, intent)
-            }
-        }
-        context.registerReceiver(broadcastSMSReceiver, IntentFilter().apply {
-            addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)
-        })
-        setMessages(SMSMessageEvent.addAllSMS(contentReceiver.getAllSMS()))
-    }
-
-    fun setMessages(event: SMSMessageEvent) {
-        when (event) {
-            is SMSMessageEvent.addAllSMS -> {
-                if (event.list != messagesList) {
-                    messagesList.addAll(event.list)
-                }
-            }
-            is SMSMessageEvent.addSMS -> messagesList.add(event.smsMessage)
-        }
-    }
-
-    fun predict(messages: List<String>) {
         viewModelScope.launch {
-            try {
-                val spamHamPhishRequest = SpamHamPhishRequest(messages)
-                val result = serverClientService.getpredictions(spamHamPhishRequest)
-                println(result.toString())
-            } catch (e: Exception) {
-                println(e.message)
+            withContext(Dispatchers.IO) {
+                smsDAOSMSMessage.addAllSMSMessages(contentReceiver.getAllSMS())
             }
         }
-    }
-
-    override fun onCleared() {
-        context.unregisterReceiver(broadcastSMSReceiver)
-        super.onCleared()
     }
 }

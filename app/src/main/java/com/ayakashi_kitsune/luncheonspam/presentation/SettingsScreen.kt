@@ -9,6 +9,5 @@ fun SettingsScreen(
     viewmodel: ViewModel
 ) {
     Column {
-
     }
 }

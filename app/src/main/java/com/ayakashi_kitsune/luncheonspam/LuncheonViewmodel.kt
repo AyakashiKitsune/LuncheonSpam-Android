@@ -2,6 +2,7 @@ package com.ayakashi_kitsune.luncheonspam
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,7 @@ import com.ayakashi_kitsune.luncheonspam.domain.database.AppDatabase
 import com.ayakashi_kitsune.luncheonspam.domain.database.DAOSMSMessage
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import com.ayakashi_kitsune.luncheonspam.domain.serverService.ServerClientService
+import com.ayakashi_kitsune.luncheonspam.presentation.PlatformFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
@@ -42,10 +44,13 @@ class LuncheonViewmodel(
     private val notificationService: NotificationService
 
     private val smsDAOSMSMessage: DAOSMSMessage = database.DAOSMSMessage()
-
+    var filter = mutableStateOf(PlatformFilter.SMS)
     val messageslist = flow {
         while (true) {
-            emit(smsDAOSMSMessage.getSMSMessages())
+            println(filter.value.name)
+            emit(smsDAOSMSMessage.getSMSMessages().filter {
+                it.platform == filter.value.name
+            })
             delay(3000)
         }
     }.catch {

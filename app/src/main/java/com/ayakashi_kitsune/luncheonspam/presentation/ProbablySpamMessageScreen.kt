@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -37,36 +38,61 @@ fun ProbablySpamMessageScreen(
         initial = emptyMap(),
         Dispatchers.IO
     )
-
-    if (listOfSMS.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "Empty messages", style = MaterialTheme.typography.bodyLarge)
-        }
-    } else {
-        LazyColumn(
-            modifier = modifier,
-            contentPadding = PaddingValues(4.dp)
-        ) {
-            items(
-                listOfSMS.keys.size,
-                key = { listOfSMS.keys.toList()[it] }
-            ) {
-                MessageCard(
-                    smsMessage = listOfSMS[listOfSMS.keys.toList()[it]]!!,
-                    showChat = {
-                        val index = listOfSMS.keys.toList()[it]
-                        onClickChat(index)
+    Column {
+        Row(Modifier.fillMaxWidth()) {
+            PlatformFilter.entries.map {
+                Button(
+                    onClick = {
+                        viewmodel.filter.value = it
                     },
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(4.dp),
+                    enabled = it != viewmodel.filter.value
+                ) {
+                    Text(text = it.name, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+        if (listOfSMS.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Empty messages in ${viewmodel.filter.value}",
+                    style = MaterialTheme.typography.bodyLarge
                 )
+            }
+        } else {
+
+            LazyColumn(
+                modifier = modifier,
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                items(
+                    listOfSMS.keys.size,
+                    key = { listOfSMS.keys.toList()[it] }
+                ) {
+                    MessageCard(
+                        smsMessage = listOfSMS[listOfSMS.keys.toList()[it]]!!,
+                        showChat = {
+                            val index = listOfSMS.keys.toList()[it]
+                            onClickChat(index)
+                        },
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp)
+                    )
+                }
             }
         }
     }
+
+}
+
+enum class PlatformFilter {
+    SMS, Gmail, Messenger
 }
 
 @Composable

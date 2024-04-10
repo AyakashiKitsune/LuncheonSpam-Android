@@ -14,10 +14,8 @@ import com.ayakashi_kitsune.luncheonspam.domain.database.DAOSMSMessage
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import com.ayakashi_kitsune.luncheonspam.domain.serverService.ServerClientService
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class SniffIcationListenerService : NotificationListenerService() {
 
@@ -88,41 +86,41 @@ class SniffIcationListenerService : NotificationListenerService() {
 
         if (content != null) {
             cScope.launch {
-                withContext(Dispatchers.IO) {
-                    try {
-                        // predict
-                        val spamHamPhishRequest = SpamHamPhishRequest(listOf(content.content))
-                        val result = serverClientService.getpredictions(spamHamPhishRequest)
-                        // service reacts to sms
-                        result.forEach { sms ->
-                            notificationService.createNotification(
-                                1,
-                                "Your ${content.platform} from ${content.sender}",
-                                // "sms received"
-                                "Contains ${sms.links_found.size} links and considered as ${if (sms.is_spam) "spam" else "legit"} message"
-                            )
-                            smsDAOSMSMessage.addSMSMessages(
-                                SMSMessage(
-                                    sender = content.sender,
-                                    content = content.content,
-                                    spamContent = sms.is_spam,
-                                    linksFound = sms.links_found.map { it.link },
-                                    platform = content.platform
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
+                try {
+                    // predict
+                    val spamHamPhishRequest = SpamHamPhishRequest(listOf(content.content))
+                    val result = serverClientService.getpredictions(spamHamPhishRequest)
+                    // service reacts to sms
+                    result.forEach { sms ->
+                        notificationService.createNotification(
+                            1,
+                            "Your ${content.platform} from ${content.sender}",
+                            // "sms received"
+                            "Contains ${sms.links_found.size} links and considered as ${if (sms.is_spam) "spam" else "legit"} message"
+                        )
+
                         smsDAOSMSMessage.addSMSMessages(
                             SMSMessage(
                                 sender = content.sender,
                                 content = content.content,
+                                spamContent = sms.is_spam,
+                                linksFound = sms.links_found.map { it.link },
                                 platform = content.platform
                             )
                         )
-                        Log.d("BGService", "err: server conn")
                     }
+                } catch (e: Exception) {
+                    smsDAOSMSMessage.addSMSMessages(
+                        SMSMessage(
+                            sender = content.sender,
+                            content = content.content,
+                            platform = content.platform
+                        )
+                    )
+                    Log.d("BGServicesniff", "err: server conn ${e.message}")
                 }
             }
+
         }
         if (packagename != applicationContext.packageName) {
             val extras = notif?.extras

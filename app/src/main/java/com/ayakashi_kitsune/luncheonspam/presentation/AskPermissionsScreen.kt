@@ -59,16 +59,16 @@ fun AskPermissionsScreen(
                 listOf(
                     NotificationManagerCompat.getEnabledListenerPackages(context)
                         .contains(context.packageName),
-                    context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
                     context.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
+                    context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
                     context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
                 )
             } else {
                 listOf(
                     NotificationManagerCompat.getEnabledListenerPackages(context)
                         .contains(context.packageName),
-                    context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
                     context.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
+                    context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
                 )
             }
             emit(list)

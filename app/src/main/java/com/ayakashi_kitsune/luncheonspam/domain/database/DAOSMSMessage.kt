@@ -15,8 +15,8 @@ interface DAOSMSMessage {
     @Query("SELECT * FROM SpamHamTable")
     fun getSMSMessages(): List<SMSMessage>
 
-    @Insert
-    fun addSMSMessages(vararg smsMessage: SMSMessage)
+    @Insert()
+    fun addSMSMessages(smsMessage: SMSMessage)
 
     @Upsert(SMSMessage::class)
     fun addAllSMSMessages(listSms: List<SMSMessage>)

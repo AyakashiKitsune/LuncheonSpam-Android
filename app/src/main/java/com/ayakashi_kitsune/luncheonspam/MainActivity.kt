@@ -88,13 +88,13 @@ class MainActivity : ComponentActivity() {
                 }
                 Scaffold(
                     bottomBar = {
-                        LuncheonNavigationBar(
-                            navHostController = navHostController,
-                            selectedNavIndex = selectedNavIndex,
-                            setSelectedNavIndex = {
-                                selectedNavIndex = it
-                            }
-                        )
+//                        LuncheonNavigationBar(
+//                            navHostController = navHostController,
+//                            selectedNavIndex = selectedNavIndex,
+//                            setSelectedNavIndex = {
+//                                selectedNavIndex = it
+//                            }
+//                        )
                     }
                 ) { padd ->
                     /*surface for all text to contrast automatically*/

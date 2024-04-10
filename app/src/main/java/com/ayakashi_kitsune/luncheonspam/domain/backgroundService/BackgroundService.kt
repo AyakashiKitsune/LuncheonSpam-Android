@@ -9,12 +9,12 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.room.Room
 import com.ayakashi_kitsune.luncheonspam.data.SpamHamPhishRequest
 import com.ayakashi_kitsune.luncheonspam.domain.contentSMSProvider.ContentSMSReceiver
 import com.ayakashi_kitsune.luncheonspam.domain.database.AppDatabase
 import com.ayakashi_kitsune.luncheonspam.domain.database.DAOSMSMessage
+import com.ayakashi_kitsune.luncheonspam.domain.notificationListenerService.SniffIcationListenerService
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
 import com.ayakashi_kitsune.luncheonspam.domain.serverService.ServerClientService
 import kotlinx.coroutines.CoroutineScope
@@ -111,8 +111,8 @@ class BackgroundService : Service() {
                         }
                     } catch (e: Exception) {
                         smsDAOSMSMessage.addSMSMessages(latestsms)
-                        Toast.makeText(applicationContext, "err: server conn", Toast.LENGTH_SHORT)
-                            .show()
+                        Log.d("BGService", "err: server conn")
+//                        Toast.makeText(applicationContext, "", Toast.LENGTH_SHORT).show()
                     }
 
                 }
@@ -135,6 +135,64 @@ class BackgroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("BackgroundService", "started command")
+        when (intent?.action) {
+            BGServiceIntent.START.name -> {
+
+            }
+
+            BGServiceIntent.STOP.name -> {
+                onDestroy()
+            }
+
+            BGServiceIntent.CHANGE_HOST.name -> {
+                val newHost = intent.getStringExtra("host")
+                newHost?.let {
+                    serverClientService = ServerClientService(host = newHost)
+                    startService(
+                        Intent(
+                            applicationContext,
+                            SniffIcationListenerService::class.java
+                        ).apply {
+                            action = BGServiceIntent.CHANGE_HOST.name
+                            putExtra("host", newHost)
+                        })
+                }
+            }
+
+            BGServiceIntent.CHANGE_PORT.name -> {
+                val newPort = intent.getStringExtra("port")
+                newPort?.let {
+                    serverClientService = ServerClientService(port = newPort)
+                    startService(
+                        Intent(
+                            applicationContext,
+                            SniffIcationListenerService::class.java
+                        ).apply {
+                            action = BGServiceIntent.CHANGE_PORT.name
+                            putExtra("port", newPort)
+                        })
+                }
+            }
+
+            BGServiceIntent.CHANGE_HOST_AND_PORT.name -> {
+                val newHost = intent.getStringExtra("host")
+                val newPort = intent.getStringExtra("port")
+
+                if (newPort != null && newHost != null) {
+                    serverClientService = ServerClientService(newHost, newPort)
+                    startService(
+                        Intent(
+                            applicationContext,
+                            SniffIcationListenerService::class.java
+                        ).apply {
+                            action = BGServiceIntent.CHANGE_HOST_AND_PORT.name
+                            putExtra("host", newHost)
+                            putExtra("port", newPort)
+                        })
+                }
+            }
+        }
+
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -154,4 +212,12 @@ class BackgroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
+}
+
+enum class BGServiceIntent {
+    CHANGE_HOST_AND_PORT,
+    CHANGE_HOST,
+    CHANGE_PORT,
+    START,
+    STOP,
 }

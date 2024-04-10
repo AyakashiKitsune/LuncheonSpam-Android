@@ -17,6 +17,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 class ServerClientService(
+//    host: String = "http://192.168.5.185",
     host: String = "http://192.168.1.12",
     port: String = "5000"
 ) {

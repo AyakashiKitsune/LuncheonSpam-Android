@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -39,6 +40,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.room.Room
+import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BGServiceIntent
 import com.ayakashi_kitsune.luncheonspam.domain.backgroundService.BackgroundService
 import com.ayakashi_kitsune.luncheonspam.domain.database.AppDatabase
 import com.ayakashi_kitsune.luncheonspam.domain.notificationService.NotificationService
@@ -57,15 +59,13 @@ class LuncheonSpamApp : Application() {
         val notificationService = NotificationService(this)
         notificationService.createChannel()
 
-        startService(Intent(this, BackgroundService::class.java))
     }
 }
 
 class MainActivity : ComponentActivity() {
-    private val host: String = "http://192.168.1.12"
-    private val port: String = "5000"
     private lateinit var database: AppDatabase
-
+    val host = "http://192.168.1.12"
+    val port = "5000"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         database = Room.databaseBuilder(
@@ -77,24 +77,23 @@ class MainActivity : ComponentActivity() {
             LuncheonViewmodelFactory(
                 context = this.applicationContext,
                 database = database,
-                host, port
             )
         }
+
         setContent {
             LuncheonSpamTheme {
                 val navHostController = rememberNavController()
                 var selectedNavIndex by remember {
-                    mutableStateOf(
-                        navHostController.currentBackStackEntry?.destination?.route
-                            ?: Screenpaths.ProbablySpamMessageScreen.destination
-                    )
+                    mutableStateOf<Screenpaths>(Screenpaths.AskPermissionsScreen)
                 }
                 Scaffold(
                     bottomBar = {
                         LuncheonNavigationBar(
                             navHostController = navHostController,
-                            getSelectedNavIndex = selectedNavIndex,
-                            setSelectedNavIndex = { selectedNavIndex = it }
+                            selectedNavIndex = selectedNavIndex,
+                            setSelectedNavIndex = {
+                                selectedNavIndex = it
+                            }
                         )
                     }
                 ) { padd ->
@@ -110,7 +109,6 @@ class MainActivity : ComponentActivity() {
                             navController = navHostController,
                             startDestination = Screenpaths.AskPermissionsScreen.destination
                         ) {
-
                             composable(Screenpaths.AskPermissionsScreen.destination) {
                                 val permissions = remember {
                                     /*
@@ -120,7 +118,11 @@ class MainActivity : ComponentActivity() {
                                         listOf<Boolean>(
                                             applicationContext.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
                                             applicationContext.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
-                                            applicationContext.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                                            applicationContext.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
+                                            NotificationManagerCompat.getEnabledListenerPackages(
+                                                applicationContext
+                                            ).contains(applicationContext.packageName),
+
                                         )
                                     } else {
                                         /*
@@ -129,6 +131,9 @@ class MainActivity : ComponentActivity() {
                                         listOf<Boolean>(
                                             applicationContext.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED,
                                             applicationContext.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED,
+                                            NotificationManagerCompat.getEnabledListenerPackages(
+                                                applicationContext
+                                            ).contains(applicationContext.packageName)
                                         )
                                     }
                                 }
@@ -141,6 +146,7 @@ class MainActivity : ComponentActivity() {
                                             inclusive = true
                                         }
                                     }
+                                    selectedNavIndex = Screenpaths.ProbablySpamMessageScreen
                                 }
                                 /* else just show the ask perissions screen*/
                                 AskPermissionsScreen(navHostController = navHostController)
@@ -150,6 +156,17 @@ class MainActivity : ComponentActivity() {
                                 Screenpaths.ProbablySpamMessageScreen.destination,
                                 enterTransition = { slideInHorizontally() }
                             ) {
+                                startService(
+                                    Intent(
+                                        applicationContext,
+                                        BackgroundService::class.java
+                                    ).apply {
+                                        action = BGServiceIntent.CHANGE_HOST_AND_PORT.name
+                                        putExtra("host", host)
+                                        putExtra("port", port)
+                                    }
+                                )
+                                selectedNavIndex = Screenpaths.ProbablySpamMessageScreen
                                 ProbablySpamMessageScreen(
                                     viewmodel = viewmodel,
                                     navHostController,
@@ -166,14 +183,17 @@ class MainActivity : ComponentActivity() {
                                 })
                             ) {
                                 val index = it.arguments?.getString("index")
+                                selectedNavIndex = Screenpaths.ChatViewScreen
                                 ChatView(viewmodel, index)
                             }
 
                             composable(Screenpaths.SettingsScreen.destination) {
+                                selectedNavIndex = Screenpaths.SettingsScreen
                                 SettingsScreen(viewmodel = viewmodel)
                             }
 
                             composable(Screenpaths.DebugScreen.destination) {
+                                selectedNavIndex = Screenpaths.DebugScreen
                                 DebugScreen(viewmodel = viewmodel)
                             }
                         }
@@ -188,33 +208,37 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LuncheonNavigationBar(
     navHostController: NavHostController,
-    getSelectedNavIndex: String,
-    setSelectedNavIndex: (String) -> Unit
+    selectedNavIndex: Screenpaths,
+    setSelectedNavIndex: (Screenpaths) -> Unit,
+
 ) {
     val isLandscapeOrientation = when (LocalConfiguration.current.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> true
         else -> false
     }
     val haptics = LocalHapticFeedback.current
-    val shownav = when (getSelectedNavIndex) {
-        Screenpaths.ProbablySpamMessageScreen.destination,
-        Screenpaths.SettingsScreen.destination -> true
+    val showNav = when (selectedNavIndex) {
+        Screenpaths.AskPermissionsScreen,
+        Screenpaths.ChatViewScreen,
+        Screenpaths.DebugScreen -> false
 
-        else -> false
+        Screenpaths.ProbablySpamMessageScreen,
+        Screenpaths.SettingsScreen -> true
     }
-    if (shownav) {
+
+    if (showNav) {
         if (isLandscapeOrientation) {
             NavigationRail {
                 navScreenList.map { screen ->
                     NavigationRailItem(
-                        selected = screen.destination == getSelectedNavIndex,
+                        selected = screen == selectedNavIndex,
                         onClick = {
                             navHostController.navigate(screen.destination) {
-                                this.popUpTo(getSelectedNavIndex) {
+                                this.popUpTo(selectedNavIndex.destination) {
                                     inclusive = true
                                 }
                             }
-                            setSelectedNavIndex(screen.destination)
+//                        selectedNavIndex = screen
                         },
                         icon = {
                             Icon(
@@ -237,14 +261,14 @@ fun LuncheonNavigationBar(
             ) {
                 navScreenList.map { screen ->
                     NavigationBarItem(
-                        selected = screen.destination == getSelectedNavIndex,
+                        selected = screen == selectedNavIndex,
                         onClick = {
                             navHostController.navigate(screen.destination) {
-                                this.popUpTo(getSelectedNavIndex) {
+                                this.popUpTo(selectedNavIndex.destination) {
                                     inclusive = true
                                 }
                             }
-                            setSelectedNavIndex(screen.destination)
+//                        selectedNavIndex = screen
                         },
                         icon = {
                             Icon(
@@ -258,4 +282,5 @@ fun LuncheonNavigationBar(
             }
         }
     }
+
 }

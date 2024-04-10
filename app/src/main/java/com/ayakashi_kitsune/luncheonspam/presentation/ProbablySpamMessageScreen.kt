@@ -37,6 +37,7 @@ fun ProbablySpamMessageScreen(
         initial = emptyMap(),
         Dispatchers.IO
     )
+
     if (listOfSMS.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -49,12 +50,6 @@ fun ProbablySpamMessageScreen(
             modifier = modifier,
             contentPadding = PaddingValues(4.dp)
         ) {
-            item {
-                Row {
-                    // recommended to set as spam
-                    // setted as spams
-                }
-            }
             items(
                 listOfSMS.keys.size,
                 key = { listOfSMS.keys.toList()[it] }

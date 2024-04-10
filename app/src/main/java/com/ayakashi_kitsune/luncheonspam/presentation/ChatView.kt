@@ -2,8 +2,11 @@
 
 package com.ayakashi_kitsune.luncheonspam.presentation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -36,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ayakashi_kitsune.luncheonspam.LuncheonViewmodel
@@ -77,15 +81,28 @@ fun ChatView(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatSMS(
     smsMessage: SMSMessage
 ) {
+    val context = LocalContext.current
     var showDate by remember { mutableStateOf(false) }
     BoxWithConstraints(
-        modifier = Modifier.clickable {
-            showDate = !showDate
-        }
+        modifier = Modifier.combinedClickable(
+            onClick = {
+                showDate = !showDate
+
+            },
+            onLongClick = {
+                context.startActivity(
+                    Intent(
+                        Intent.ACTION_SENDTO,
+                        Uri.parse("sms:${smsMessage.sender}")
+                    )
+                )
+            }
+        )
     ) {
         val width = this.maxWidth
         Column(

@@ -25,7 +25,10 @@ data class SMSMessage(
     val spamContent: Boolean = false,
 
     @ColumnInfo()
-    val linksFound: List<String> = emptyList()
+    val linksFound: List<String> = emptyList(),
+
+    @ColumnInfo
+    val platform: String = "SMS"
 )
 
 class Converter {

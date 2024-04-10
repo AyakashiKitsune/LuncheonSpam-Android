@@ -23,12 +23,10 @@ import kotlinx.coroutines.withContext
 class LuncheonViewmodelFactory(
     private val context: Context,
     private val database: AppDatabase,
-    private val host: String,
-    private val port: String
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LuncheonViewmodel(context, database, host, port) as T
+        return LuncheonViewmodel(context, database) as T
     }
 }
 
@@ -36,8 +34,6 @@ class LuncheonViewmodelFactory(
 class LuncheonViewmodel(
     context: Context,
     database: AppDatabase,
-    host: String,
-    port: String,
 ) : ViewModel() {
     private val contentReceiver: ContentSMSReceiver
 
@@ -52,19 +48,15 @@ class LuncheonViewmodel(
             emit(smsDAOSMSMessage.getSMSMessages())
             delay(3000)
         }
-
-    }
-        .catch {
-            Log.d("messageListErr", it.message.toString())
+    }.catch {
+        Log.d("messageListErr", it.message.toString())
+    }.onEach {
+        println("running sms flow")
+    }.map { listsms ->
+        listsms.groupBy {
+            it.sender
         }
-        .onEach {
-            println("running sms flow")
-        }
-        .map { listsms ->
-            listsms.groupBy {
-                it.sender
-            }
-        }.flowOn(Dispatchers.IO)
+    }.flowOn(Dispatchers.IO)
 
     init {
         contentReceiver = ContentSMSReceiver(context)

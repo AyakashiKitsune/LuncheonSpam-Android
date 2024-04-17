@@ -100,12 +100,14 @@ class BackgroundService : Service() {
                                 1,
                                 "Your SMS from ${latestsms.sender}",
                                 // "sms received"
-                                "Contains ${sms.links_found.size} links and considered as ${if (sms.is_spam) "spam" else "legit"} message"
+                                "Contains ${sms.links_found.size} links and considered as ${if (sms.is_spam) "spam" else "legit"} message ${if (sms.has_profanity) "but has profanity" else ""}"
                             )
                             smsDAOSMSMessage.addSMSMessages(
                                 latestsms.copy(
                                     spamContent = sms.is_spam,
-                                    linksFound = sms.links_found.map { it.link }
+                                    linksFound = sms.links_found.map { it.link },
+                                    hasProfanity = sms.has_profanity,
+
                                 )
                             )
                         }

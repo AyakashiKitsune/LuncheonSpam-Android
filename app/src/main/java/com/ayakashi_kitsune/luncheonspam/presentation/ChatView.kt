@@ -39,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -133,7 +134,29 @@ fun ChatSMS(
                         .padding(8.dp),
                     colors = if (smsMessage.spamContent) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer) else CardDefaults.cardColors()
                 ) {
-                    Text(text = smsMessage.content, Modifier.padding(8.dp))
+                    if (smsMessage.hasProfanity) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color.Red)
+                        ) {
+                            Text(text = "it has profanity", modifier = Modifier.padding(8.dp))
+                        }
+                    }
+                    val sms = remember {
+                        smsMessage.content.let {
+                            var msg = it
+                            if (smsMessage.spamContent) {
+                                for (link in smsMessage.linksFound) {
+                                    println(link)
+                                    msg = msg.replace(link,
+                                        buildString { link.map { append('*') } }
+                                    )
+                                }
+                            }
+                            msg
+
+                        }
+                    }
+                    Text(text = sms, Modifier.padding(8.dp))
                 }
             }
         }

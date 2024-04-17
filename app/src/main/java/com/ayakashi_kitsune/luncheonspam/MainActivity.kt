@@ -64,6 +64,8 @@ class LuncheonSpamApp : Application() {
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
+
+    //    val host = "http://192.168.120.218"
     val host = "http://192.168.1.12"
     val port = "5000"
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,6 +81,16 @@ class MainActivity : ComponentActivity() {
                 database = database,
             )
         }
+        startService(
+            Intent(
+                applicationContext,
+                BackgroundService::class.java
+            ).apply {
+                action = BGServiceIntent.CHANGE_HOST_AND_PORT.name
+                putExtra("host", host)
+                putExtra("port", port)
+            }
+        )
 
         setContent {
             LuncheonSpamTheme {
@@ -156,17 +168,8 @@ class MainActivity : ComponentActivity() {
                                 Screenpaths.ProbablySpamMessageScreen.destination,
                                 enterTransition = { slideInHorizontally() }
                             ) {
-                                startService(
-                                    Intent(
-                                        applicationContext,
-                                        BackgroundService::class.java
-                                    ).apply {
-                                        action = BGServiceIntent.CHANGE_HOST_AND_PORT.name
-                                        putExtra("host", host)
-                                        putExtra("port", port)
-                                    }
-                                )
-                                selectedNavIndex = Screenpaths.ProbablySpamMessageScreen
+
+                            selectedNavIndex = Screenpaths.ProbablySpamMessageScreen
                                 ProbablySpamMessageScreen(
                                     viewmodel = viewmodel,
                                     navHostController,

@@ -28,6 +28,9 @@ data class SMSMessage(
     val linksFound: List<String> = emptyList(),
 
     @ColumnInfo
+    val hasProfanity: Boolean = false,
+
+    @ColumnInfo
     val platform: String = "SMS"
 )
 

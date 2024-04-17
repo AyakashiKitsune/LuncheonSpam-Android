@@ -16,6 +16,7 @@ import com.ayakashi_kitsune.luncheonspam.domain.serverService.ServerClientServic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class SniffIcationListenerService : NotificationListenerService() {
 
@@ -25,6 +26,7 @@ class SniffIcationListenerService : NotificationListenerService() {
     lateinit var cScope: CoroutineScope
     lateinit var notificationService: NotificationService
     override fun onCreate() {
+        Log.d("BGServiceSniff", "create")
         database = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
@@ -66,6 +68,7 @@ class SniffIcationListenerService : NotificationListenerService() {
                 val newPort = intent.getStringExtra("port")
 
                 if (newPort != null && newHost != null) {
+                    Log.d("BGServiceSniff", "notifhost port")
                     serverClientService = ServerClientService(newHost, newPort)
                 }
             }
@@ -73,7 +76,14 @@ class SniffIcationListenerService : NotificationListenerService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    override fun onNotificationPosted(sbn: StatusBarNotification?, rankingMap: RankingMap?) {
+        Log.d("BGServiceSniff", "notif2")
+
+        super.onNotificationPosted(sbn, rankingMap)
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        Log.d("BGServiceSniff", "notif")
         val notif = sbn?.notification
         val packagename = sbn?.packageName
         val content = when (packagename) {
@@ -96,7 +106,7 @@ class SniffIcationListenerService : NotificationListenerService() {
                             1,
                             "Your ${content.platform} from ${content.sender}",
                             // "sms received"
-                            "Contains ${sms.links_found.size} links and considered as ${if (sms.is_spam) "spam" else "legit"} message"
+                            "Contains ${sms.links_found.size} links and considered as ${if (sms.is_spam) "spam" else "legit"} message ${if (sms.has_profanity) "but has profanity" else ""}"
                         )
 
                         smsDAOSMSMessage.addSMSMessages(
@@ -105,7 +115,9 @@ class SniffIcationListenerService : NotificationListenerService() {
                                 content = content.content,
                                 spamContent = sms.is_spam,
                                 linksFound = sms.links_found.map { it.link },
-                                platform = content.platform
+                                platform = content.platform,
+                                date = Calendar.getInstance().timeInMillis,
+                                hasProfanity = sms.has_profanity
                             )
                         )
                     }
@@ -114,7 +126,8 @@ class SniffIcationListenerService : NotificationListenerService() {
                         SMSMessage(
                             sender = content.sender,
                             content = content.content,
-                            platform = content.platform
+                            platform = content.platform,
+                            date = Calendar.getInstance().timeInMillis,
                         )
                     )
                     Log.d("BGServicesniff", "err: server conn ${e.message}")
@@ -138,6 +151,8 @@ class SniffIcationListenerService : NotificationListenerService() {
     }
 
     override fun onDestroy() {
+        Log.d("BGServiceSniff", "destroyed")
+        database.close()
         super.onDestroy()
     }
 }
@@ -165,16 +180,24 @@ enum class PlatformFilter(val packageName: String) {
     GMAIL("com.google.android.gm")
 }
 
-fun Notification.getEmail(): EmailGmailContent {
+fun Notification.getEmail(): EmailGmailContent? {
     val bundle = this.extras
     val sender = bundle.getCharSequence(Notification.EXTRA_TITLE).toString()
     val content = bundle.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()
-    return EmailGmailContent(sender, content)
+    return if (sender == "null") {
+        null
+    } else {
+        EmailGmailContent(sender, content)
+    }
 }
 
-fun Notification.getMessenger(): MessengerContent {
+fun Notification.getMessenger(): MessengerContent? {
     val bundle = this.extras
     val sender = bundle.getCharSequence(Notification.EXTRA_TITLE).toString()
     val content = bundle.getCharSequence(Notification.EXTRA_TEXT).toString()
-    return MessengerContent(sender, content)
+    return if (sender == "null") {
+        null
+    } else {
+        MessengerContent(sender, content)
+    }
 }
